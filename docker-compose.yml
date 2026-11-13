@@ -1,0 +1,74 @@
+name: pulso
+
+services:
+  api:
+    build: .
+    image: pulso-api:local
+    ports:
+      - "${PULSO_PORT:-8000}:8000"
+    environment:
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      PULSO_COOKIE_SECURE: ${PULSO_COOKIE_SECURE:-0}
+      PULSO_ADMIN_EMAIL: ${PULSO_ADMIN_EMAIL:-admin@pulso.local}
+      PULSO_ADMIN_SENHA: ${PULSO_ADMIN_SENHA:-pulso123}
+      PULSO_ALERTAS_EXTERNAS: ${PULSO_ALERTAS_EXTERNAS:-1}
+      PULSO_SMTP_HOST: ${PULSO_SMTP_HOST:-}
+      PULSO_SMTP_PORTA: ${PULSO_SMTP_PORTA:-587}
+      PULSO_SMTP_USUARIO: ${PULSO_SMTP_USUARIO:-}
+      PULSO_SMTP_SENHA: ${PULSO_SMTP_SENHA:-}
+      PULSO_SMTP_SEGURANCA: ${PULSO_SMTP_SEGURANCA:-starttls}
+      PULSO_ALERTA_REMETENTE: ${PULSO_ALERTA_REMETENTE:-}
+      PULSO_TELEGRAM_BOT_TOKEN: ${PULSO_TELEGRAM_BOT_TOKEN:-}
+      PULSO_WHATSAPP_TOKEN: ${PULSO_WHATSAPP_TOKEN:-}
+      PULSO_WHATSAPP_PHONE_ID: ${PULSO_WHATSAPP_PHONE_ID:-}
+      PULSO_WHATSAPP_TEMPLATE: ${PULSO_WHATSAPP_TEMPLATE:-pulso_alerta}
+      PULSO_WHATSAPP_IDIOMA: ${PULSO_WHATSAPP_IDIOMA:-pt_BR}
+      # Para usar Postgres/Redis, suba com os profiles e aponte as URLs:
+      #   DATABASE_URL=postgresql+psycopg://pulso:pulso@postgres:5432/pulso
+      #   REDIS_URL=redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL:-sqlite:////dados/ecommerce.db}
+      REDIS_URL: ${REDIS_URL:-}
+    volumes:
+      - pulso_dados:/dados
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false
+      redis:
+        condition: service_healthy
+        required: false
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_DB: pulso
+      POSTGRES_USER: pulso
+      POSTGRES_PASSWORD: pulso
+    volumes:
+      - pulso_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pulso -d pulso"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    profiles: ["redis"]
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - pulso_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pulso_dados:
+  pulso_pg:
+  pulso_redis:
