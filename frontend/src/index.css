@@ -1,0 +1,212 @@
+@import "tailwindcss";
+
+@source "../index.html";
+@source "./**/*.{ts,tsx}";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Monochrome design tokens. Light = branco com tinta preta,
+ * dark = preto com tinta branca. Os componentes só usam os tokens,
+ * então as duas direções do tema saem do mesmo CSS.
+ */
+:root {
+  --canvas: #f6f6f4;
+  --surface: #ffffff;
+  --surface-2: #efefec;
+  --fill: rgba(10, 10, 10, 0.045);
+  --fill-hover: rgba(10, 10, 10, 0.08);
+  --fill-strong: rgba(10, 10, 10, 0.12);
+  --line: rgba(10, 10, 10, 0.13);
+  --line-soft: rgba(10, 10, 10, 0.07);
+  --line-strong: rgba(10, 10, 10, 0.34);
+  --ink: #0a0a0a;
+  --muted: #575757;
+  --faint: #737373;
+  --invert: #0a0a0a;
+  --invert-ink: #ffffff;
+  --dot: rgba(10, 10, 10, 0.11);
+  --glow: rgba(10, 10, 10, 0.05);
+  --shimmer: rgba(10, 10, 10, 0.06);
+  --overlay: rgba(14, 14, 14, 0.34);
+  --shadow-panel: 0 30px 70px -46px rgba(10, 10, 10, 0.45);
+  color-scheme: light;
+}
+
+.dark {
+  --canvas: #060606;
+  --surface: #0c0c0c;
+  --surface-2: #121212;
+  --fill: rgba(255, 255, 255, 0.045);
+  --fill-hover: rgba(255, 255, 255, 0.08);
+  --fill-strong: rgba(255, 255, 255, 0.13);
+  --line: rgba(255, 255, 255, 0.13);
+  --line-soft: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.36);
+  --ink: #f7f7f7;
+  --muted: #a1a1a1;
+  --faint: #7d7d7d;
+  --invert: #fafafa;
+  --invert-ink: #070707;
+  --dot: rgba(255, 255, 255, 0.09);
+  --glow: rgba(255, 255, 255, 0.06);
+  --shimmer: rgba(255, 255, 255, 0.07);
+  --overlay: rgba(0, 0, 0, 0.72);
+  --shadow-panel: 0 30px 70px -40px rgba(0, 0, 0, 0.95);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-fill: var(--fill);
+  --color-fill-hover: var(--fill-hover);
+  --color-fill-strong: var(--fill-strong);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-invert: var(--invert);
+  --color-invert-ink: var(--invert-ink);
+  --color-overlay: var(--overlay);
+}
+
+@layer base {
+  html {
+    background-color: var(--canvas);
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: var(--ink);
+    color: var(--canvas);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 9999px;
+    background-color: var(--line-strong);
+    background-clip: content-box;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+.dot-grid {
+  background-image: radial-gradient(var(--dot) 1px, transparent 1px);
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(ellipse 92% 58% at 50% 0%, #000 12%, transparent 78%);
+  mask-image: radial-gradient(ellipse 92% 58% at 50% 0%, #000 12%, transparent 78%);
+}
+
+.hero-glow {
+  background-image: radial-gradient(58% 100% at 50% 0%, var(--glow), transparent 72%);
+}
+
+.panel-shadow {
+  box-shadow: var(--shadow-panel);
+}
+
+.bar-striped {
+  background-image: repeating-linear-gradient(135deg, currentColor 0 3px, transparent 3px 7px);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-rise {
+  animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-fade {
+  animation: fade 0.2s ease-out both;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--fill);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--shimmer), transparent);
+  animation: shimmer 1.6s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .animate-fade,
+  .animate-slide-in,
+  .skeleton::after {
+    animation: none;
+  }
+}
