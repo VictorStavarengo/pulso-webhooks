@@ -9,6 +9,8 @@ Painel operacional que recebe webhooks assinados de marketplaces, consolida pedi
 
 ![Dashboard do Pulso](docs/screenshots/02-dashboard.png)
 
+> **Demo pública:** **https://pulso-api-2uc9.onrender.com** · login `demo@pulso.dev` / `Pulso-Demo-2026`. Todos os dados são fictícios e recriados a cada deploy; o plano free hiberna após 15 minutos, então a primeira visita pode levar cerca de um minuto.
+
 > **Demo local em um comando:** `PULSO_DEMO_SEED=1 PULSO_ALERTAS_EXTERNAS=0 docker compose up --build` → `http://localhost:8000` com `admin@pulso.local` / `pulso123`, 12 pedidos, integrações, notificações e uma fila de entrega já preenchida. O passo a passo da demo pública está em [Deploy de demonstração](#deploy-de-demonstração).
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/VictorStavarengo/pulso-webhooks)

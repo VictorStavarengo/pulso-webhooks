@@ -6,6 +6,8 @@ Operations dashboard that receives signed marketplace webhooks, consolidates ord
 
 ![Pulso dashboard](docs/screenshots/02-dashboard.png)
 
+> **Live demo:** **https://pulso-api-2uc9.onrender.com** · sign in with `demo@pulso.dev` / `Pulso-Demo-2026`. All data is fictional and reseeded on every deploy; the free plan sleeps after 15 minutes, so the first visit can take about a minute.
+
 > **One-command local demo:** `PULSO_DEMO_SEED=1 PULSO_ALERTAS_EXTERNAS=0 docker compose up --build` → `http://localhost:8000` with `admin@pulso.local` / `pulso123`, 12 orders, integrations, notifications and a pre-filled delivery queue. Public demo steps are under [CI and deployment](#ci-and-deployment).
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/VictorStavarengo/pulso-webhooks)
