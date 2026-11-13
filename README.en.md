@@ -230,6 +230,12 @@ Fly.io and Railway work with the same Dockerfile, the `$PORT` variable and a vol
 | --- | --- |
 | ![Team](docs/screenshots/05-equipe.png) | ![Integrations](docs/screenshots/06-integracoes.png) |
 
+### Delivery queue
+
+Every external alert goes through a queue with exponential backoff and dead-lettering. The panel shows the current attempt, the provider error, the scheduled retry — or why the send was discarded.
+
+![Delivery queue](docs/screenshots/07-fila-entrega.png)
+
 ## Known limitations
 
 - The local SSE hub serves a single worker; use `REDIS_URL` to scale horizontally.

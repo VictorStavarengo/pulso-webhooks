@@ -293,6 +293,12 @@ Confirme que `.env`, `*.db` e `.pulso-sessao` não aparecem em `git status` — 
 | --- | --- |
 | ![Equipe](docs/screenshots/05-equipe.png) | ![Integrações](docs/screenshots/06-integracoes.png) |
 
+### Fila de entrega
+
+Cada alerta externo passa por uma fila com retentativa exponencial e dead-letter. O painel mostra a tentativa atual, o erro devolvido pelo provedor, a próxima retentativa agendada — ou o motivo do descarte.
+
+![Fila de entrega](docs/screenshots/07-fila-entrega.png)
+
 ## Estrutura
 
 ```text

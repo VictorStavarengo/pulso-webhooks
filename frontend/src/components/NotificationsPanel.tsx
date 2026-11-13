@@ -60,11 +60,12 @@ const FILA_META: Record<EnvioAlertaFila['status'], { rotulo: string; estilo: str
 interface PreferenciasProps {
   loja: Loja;
   admin: boolean;
+  now: number;
   onLojaAtualizada: (loja: Loja) => void;
   onRecarregar: () => void;
 }
 
-function Preferencias({ loja, admin, onLojaAtualizada, onRecarregar }: PreferenciasProps) {
+function Preferencias({ loja, admin, now, onLojaAtualizada, onRecarregar }: PreferenciasProps) {
   const [form, setForm] = useState({
     atraso_horas: loja.atraso_horas,
     valor_alto: loja.valor_alto,
@@ -403,8 +404,10 @@ function Preferencias({ loja, admin, onLojaAtualizada, onRecarregar }: Preferenc
                     </p>
                     {item.status === 'pendente' && item.proxima_tentativa_em && (
                       <p className="mt-1 text-[10px] text-faint">
-                        Próxima tentativa{' '}
-                        {formatRelativeTime(parseServerDate(item.proxima_tentativa_em))}
+                        {parseServerDate(item.proxima_tentativa_em).getTime() <= now
+                          ? 'Retentativa atrasada'
+                          : 'Próxima tentativa'}{' '}
+                        {formatRelativeTime(parseServerDate(item.proxima_tentativa_em), now)}
                       </p>
                     )}
                     {item.erro && (
@@ -599,6 +602,7 @@ export default function NotificationsPanel({
             <Preferencias
               loja={loja}
               admin={admin}
+              now={now}
               onLojaAtualizada={onLojaAtualizada}
               onRecarregar={onRecarregar}
             />
