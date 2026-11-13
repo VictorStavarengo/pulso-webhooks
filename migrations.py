@@ -1,10 +1,11 @@
+import json
 import logging
 import re
 import secrets
 import sqlite3
 import unicodedata
 from contextlib import closing
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from sqlalchemy import func, inspect, text
@@ -207,9 +208,135 @@ def garantir_dados_padrao() -> None:
             )
 
 
+_DEMO_PEDIDOS = (
+    ("shopify", "SHP-10421", "PAGO", 1849.90, "Marina Lopes", 2),
+    ("shopify", "SHP-10420", "ENVIADO", 349.90, "Rafael Nunes", 6),
+    ("mercadolivre", "ML-88213", "ENTREGUE", 2749.00, "Camila Reis", 26),
+    ("mercadolivre", "ML-88197", "PENDENTE_PAGAMENTO", 129.90, "Bruno Sá", 8),
+    ("woocommerce", "WC-5521", "PREPARANDO_ENVIO", 489.50, "Helena Duarte", 14),
+    ("woocommerce", "WC-5518", "CANCELADO", 219.00, "Igor Matos", 30),
+    ("shopify", "SHP-10411", "ENTREGUE", 4290.00, "Lívia Prado", 52),
+    ("mercadolivre", "ML-88170", "PAGO", 89.90, "Tiago Mendes", 20),
+    ("woocommerce", "WC-5502", "ENTREGUE", 159.00, "Sofia Alves", 76),
+    ("shopify", "SHP-10398", "ENVIADO", 1120.00, "André Lima", 44),
+    ("mercadolivre", "ML-88133", "PAGO", 59.90, "Paula Vieira", 3),
+    ("woocommerce", "WC-5487", "ENTREGUE", 780.00, "Caio Ferreira", 98),
+)
+
+
+def semear_demo() -> None:
+    """Cria dados de vitrine quando PULSO_DEMO_SEED=1 e a loja ainda está vazia."""
+    from alertas import DESCARTADO, PENDENTE
+
+    import servicos
+
+    with SessionLocal() as db:
+        loja = db.query(models.Loja).order_by(models.Loja.id).first()
+        if loja is None or db.query(models.Pedido.id).first() is not None:
+            return
+
+        agora = datetime.now(timezone.utc)
+        integracoes: dict[str, models.Integracao] = {}
+        for origem in {item[0] for item in _DEMO_PEDIDOS}:
+            integracao = (
+                db.query(models.Integracao)
+                .filter(
+                    models.Integracao.loja_id == loja.id,
+                    func.lower(models.Integracao.marketplace) == origem,
+                )
+                .one_or_none()
+            )
+            if integracao is None:
+                integracao = models.Integracao(
+                    loja_id=loja.id,
+                    marketplace=origem,
+                    segredo=secrets.token_hex(24),
+                )
+                db.add(integracao)
+                db.flush()
+            integracoes[origem] = integracao
+
+        notificacoes: list[models.Notificacao] = []
+        for origem, identificador, status_pedido, valor, cliente, horas in _DEMO_PEDIDOS:
+            momento = agora - timedelta(hours=horas)
+            pedido = models.Pedido(
+                loja_id=loja.id,
+                marketplace_id=identificador,
+                status_atual=status_pedido,
+                valor_total=valor,
+                cliente_nome=cliente,
+                data_atualizacao=momento,
+            )
+            db.add(pedido)
+            db.flush()
+
+            evento = f"demo-{identificador.lower()}"
+            payload = {
+                "marketplace": origem,
+                "pedido_id": identificador,
+                "status": status_pedido,
+                "valor": valor,
+                "cliente_nome": cliente,
+                "evento_id": evento,
+            }
+            db.add(
+                models.WebhookLog(
+                    loja_id=loja.id,
+                    pedido_id=pedido.id,
+                    evento_id=evento,
+                    origem=origem,
+                    payload_raw=json.dumps(payload, ensure_ascii=False),
+                    recebido_em=momento,
+                    processado=True,
+                )
+            )
+            notificacoes.extend(servicos.notificar_evento(db, loja, pedido, status_pedido))
+
+        altos = [item for item in notificacoes if item.tipo == "valor_alto"]
+        if len(altos) >= 3:
+            db.add(
+                models.EnvioAlerta(
+                    notificacao_id=altos[0].id,
+                    canal="telegram",
+                    destino="@pulso_demo",
+                    status="enviado",
+                    tentativas=1,
+                    criado_em=agora - timedelta(minutes=40),
+                )
+            )
+            db.add(
+                models.EnvioAlerta(
+                    notificacao_id=altos[1].id,
+                    canal="email",
+                    destino="alertas@pulso.local",
+                    status=PENDENTE,
+                    erro="Timeout ao conectar no SMTP",
+                    tentativas=2,
+                    proxima_tentativa_em=agora + timedelta(minutes=5),
+                    criado_em=agora - timedelta(minutes=20),
+                )
+            )
+            db.add(
+                models.EnvioAlerta(
+                    notificacao_id=altos[2].id,
+                    canal="whatsapp",
+                    destino="+5511999990000",
+                    status=DESCARTADO,
+                    erro="Template não aprovado na Meta Cloud API",
+                    tentativas=4,
+                    criado_em=agora - timedelta(hours=2),
+                )
+            )
+
+        db.commit()
+        logger.info("dados de demonstração semeados: %d pedidos", len(_DEMO_PEDIDOS))
+
+
 def preparar_banco() -> None:
     alterou = migrar_esquema()
     aplicar_migracoes()
     if alterou:
         migrar_indices()
     garantir_dados_padrao()
+    if config.demo_seed():
+        semear_demo()

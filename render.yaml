@@ -14,17 +14,13 @@ services:
         value: "1"
       - key: PULSO_ALERTAS_EXTERNAS
         value: "0"
+      - key: PULSO_BACKUP
+        value: "0"
+      - key: PULSO_DEMO_SEED
+        value: "1"
+      - key: PULSO_LOJA_PADRAO
+        value: Loja Aurora
       - key: PULSO_ADMIN_EMAIL
         sync: false
       - key: PULSO_ADMIN_SENHA
         sync: false
-      - key: DATABASE_URL
-        fromDatabase:
-          name: pulso-db
-          property: connectionString
-
-databases:
-  - name: pulso-db
-    plan: free
-    databaseName: pulso
-    user: pulso

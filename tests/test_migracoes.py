@@ -1,9 +1,10 @@
+import models
 from alembic.script import ScriptDirectory
 from sqlalchemy import inspect, text
 
-from database import engine
+from database import SessionLocal, engine
 from migracoes_alembic import _config_alembic, aplicar_migracoes
-from migrations import preparar_banco
+from migrations import preparar_banco, semear_demo
 
 
 def test_alembic_cria_historico_e_chega_na_cabeca(cliente):
@@ -46,3 +47,18 @@ def test_preparar_banco_e_idempotente(cliente):
     with engine.connect() as conexao:
         assert conexao.execute(text("SELECT count(*) FROM lojas")).scalar() == 1
         assert conexao.execute(text("SELECT count(*) FROM usuarios")).scalar() == 1
+
+
+def test_semear_demo_e_idempotente(cliente):
+    semear_demo()
+    semear_demo()
+
+    with SessionLocal() as db:
+        assert db.query(models.Pedido).count() == 12
+        assert db.query(models.WebhookLog).count() == 12
+        assert db.query(models.Notificacao).filter_by(tipo="valor_alto").count() == 4
+        assert db.query(models.Notificacao).filter_by(tipo="cancelado").count() == 1
+        assert db.query(models.Integracao).count() == 3
+        assert {
+            envio.status for envio in db.query(models.EnvioAlerta).all()
+        } == {"enviado", "pendente", "descartado"}

@@ -116,6 +116,10 @@ def backup_ativo() -> bool:
     return os.getenv("PULSO_BACKUP", "1").lower() not in {"0", "false", "nao", "não"}
 
 
+def demo_seed() -> bool:
+    return _booleano("PULSO_DEMO_SEED", "0")
+
+
 def _booleano(nome: str, padrao: str = "1") -> bool:
     return os.getenv(nome, padrao).strip().lower() not in {"0", "false", "nao", "não", "off"}
 
