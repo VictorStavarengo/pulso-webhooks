@@ -9,9 +9,9 @@ jobs:
   deploy:
     name: Aciona o deploy do Render
     runs-on: ubuntu-latest
+    env:
+      RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
     steps:
       - name: Disparar deploy hook
         if: ${{ env.RENDER_DEPLOY_HOOK != '' }}
-        env:
-          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: curl --fail --silent --show-error -X POST "$RENDER_DEPLOY_HOOK"
