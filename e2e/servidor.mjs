@@ -4,16 +4,32 @@ import path from 'node:path';
 
 const raiz = path.resolve(import.meta.dirname, '..');
 const painel = path.join(raiz, 'frontend');
-const npmCli = path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
 
-if (!existsSync(npmCli)) {
-  console.error(`E2E: npm não encontrado em ${npmCli}`);
-  process.exit(1);
+function resolverNpm() {
+  const base = path.dirname(process.execPath);
+  const candidatos = [
+    path.join(base, 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+    path.join(base, '..', 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+    process.env.npm_config_prefix
+      ? path.join(process.env.npm_config_prefix, 'lib', 'node_modules', 'npm', 'bin', 'npm-cli.js')
+      : null,
+  ].filter(Boolean);
+  const cli = candidatos.find((caminho) => existsSync(caminho));
+  if (cli) {
+    return { comando: process.execPath, argumentos: [cli], shell: false };
+  }
+  return {
+    comando: process.platform === 'win32' ? 'npm.cmd' : 'npm',
+    argumentos: [],
+    shell: process.platform === 'win32',
+  };
 }
 
-const compilar = spawnSync(process.execPath, [npmCli, 'run', 'build'], {
+const npm = resolverNpm();
+const compilar = spawnSync(npm.comando, [...npm.argumentos, 'run', 'build'], {
   cwd: painel,
   stdio: 'inherit',
+  shell: npm.shell,
 });
 if (compilar.status !== 0) {
   console.error('E2E: falha ao compilar o painel');
