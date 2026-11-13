@@ -1,0 +1,10 @@
+# Opcionais para o modo produção.
+# Instale apenas o que for usar:
+#   pip install -r requirements-extras.txt
+#
+# Postgres  -> defina DATABASE_URL=postgresql+psycopg://usuario:senha@host/banco
+#               e rode `alembic upgrade head` (ou apenas inicie a API).
+# Redis     -> defina REDIS_URL=redis://host:6379/0
+#               (SSE entre múltiplos workers + rate limit compartilhado).
+psycopg[binary]>=3.1,<4.0
+redis>=5.0,<7.0

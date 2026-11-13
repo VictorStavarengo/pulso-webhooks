@@ -1,0 +1,51 @@
+# ---------------------------------------------------------------- Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---------------------------------------------------------------- Segredos e ambiente
+.env
+.env.*
+!.env.example
+.pulso-sessao
+
+# ---------------------------------------------------------------- Banco e backups
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.bak
+*.bak-*
+
+# ---------------------------------------------------------------- Frontend
+node_modules/
+dist/
+.vite/
+frontend/node_modules/
+frontend/dist/
+
+# ---------------------------------------------------------------- Testes e cobertura
+.coverage
+coverage.xml
+htmlcov/
+playwright-report/
+test-results/
+blob-report/
+e2e/e2e-pulso.db*
+e2e/e2e-sessao.txt
+
+# ---------------------------------------------------------------- Logs e temporários
+*.log
+*.tmp
+
+# ---------------------------------------------------------------- Editores e sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
