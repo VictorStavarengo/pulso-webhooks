@@ -196,7 +196,7 @@ GitHub Actions runs three jobs on every push and pull request: pytest, frontend 
 The same Docker image serves API and panel, which keeps deployment simple. The public demo runs as a single service with no external database:
 
 1. Create a Render Blueprint from the repository. [`render.yaml`](render.yaml) provisions one Docker service with SQLite inside the container and `PULSO_DEMO_SEED=1`. Set `PULSO_ADMIN_EMAIL`/`PULSO_ADMIN_SENHA` in the dashboard using demo-only credentials.
-2. Copy the Render deploy hook into the `RENDER_DEPLOY_HOOK` GitHub secret. [`deploy-render.yml`](.github/workflows/deploy-render.yml) triggers a deploy on every push to `main`.
+2. The Blueprint enables Render's native auto-deploy on every push to `main`. To deploy from GitHub Actions instead, copy the Render deploy hook into the `RENDER_DEPLOY_HOOK` secret; [`deploy-render.yml`](.github/workflows/deploy-render.yml) runs it and is skipped when the secret is absent. Pick one path to avoid duplicate builds.
 3. On the first boot of an empty database, the demo gets 12 orders, 3 integrations with secrets, notifications and a delivery queue holding one pending retry and one dead letter. Sign in and open **Webhook simulator** to create new orders live over SSE.
 
 Fly.io and Railway work with the same Dockerfile, the `$PORT` variable and a volume mounted at `/dados`. GitHub Pages is not an option: it only serves static files and cannot run FastAPI.

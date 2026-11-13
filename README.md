@@ -259,7 +259,7 @@ O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda em cada p
 O mesmo Dockerfile serve API e painel, o que simplifica qualquer PaaS. A demo pública roda em um único serviço, sem banco externo:
 
 1. **Render** — crie um Blueprint apontando para o repositório. O [`render.yaml`](render.yaml) sobe um serviço Docker com SQLite no próprio container e `PULSO_DEMO_SEED=1`. Preencha `PULSO_ADMIN_EMAIL` e `PULSO_ADMIN_SENHA` no dashboard com credenciais exclusivas de demonstração (nunca contas reais).
-2. **Deploy automático** — copie o *deploy hook* do serviço no Render e salve como secret `RENDER_DEPLOY_HOOK` no GitHub. O workflow [`deploy-render.yml`](.github/workflows/deploy-render.yml) dispara um deploy a cada push na `main`.
+2. **Deploy automático** — o Blueprint já liga o auto-deploy nativo do Render a cada push na `main`. Se preferir disparar pelo GitHub Actions, copie o *deploy hook* do serviço e salve como secret `RENDER_DEPLOY_HOOK`; o workflow [`deploy-render.yml`](.github/workflows/deploy-render.yml) faz o deploy e é ignorado quando o secret não existe. Escolha um dos dois para não gerar builds duplicados.
 3. **Dados de demonstração** — no primeiro boot de um banco vazio, a demo recebe 12 pedidos, 3 integrações com segredo, notificações e uma fila de entrega com um envio pendente e um dead-letter. Entre com o admin e abra **Simulador de webhook** para criar pedidos novos em tempo real via SSE.
 4. **Alternativas** — Fly.io ou Railway funcionam com o mesmo `Dockerfile`, a porta de `$PORT` e um volume em `/dados` para persistir o SQLite.
 
