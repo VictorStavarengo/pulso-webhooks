@@ -9,7 +9,9 @@ Painel operacional que recebe webhooks assinados de marketplaces, consolida pedi
 
 ![Dashboard do Pulso](docs/screenshots/02-dashboard.png)
 
-> **Demo local em um comando:** `docker compose up --build` → `http://localhost:8000` com o usuário `admin@pulso.local` / `pulso123` (dados de exemplo podem ser semeados pelo simulador). O passo a passo de deploy público está em [Deploy de demonstração](#deploy-de-demonstração).
+> **Demo local em um comando:** `PULSO_DEMO_SEED=1 PULSO_ALERTAS_EXTERNAS=0 docker compose up --build` → `http://localhost:8000` com `admin@pulso.local` / `pulso123`, 12 pedidos, integrações, notificações e uma fila de entrega já preenchida. O passo a passo da demo pública está em [Deploy de demonstração](#deploy-de-demonstração).
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/VictorStavarengo/pulso-webhooks)
 
 ## O problema
 
@@ -71,7 +73,7 @@ Decisões que valem destacar:
 | Painel | React 19, TypeScript, Vite 8, Tailwind CSS 4 |
 | Segurança | scrypt, HMAC-SHA256, TOTP (pyotp), CSRF double-submit |
 | Observabilidade | Prometheus (`prometheus-client`), Sentry, logs JSON |
-| Qualidade | pytest (63 testes), Playwright (E2E), ESLint, GitHub Actions |
+| Qualidade | pytest (64 testes), Playwright (E2E), ESLint, GitHub Actions |
 | Entrega | Docker multi-stage, Docker Compose, Render Blueprint |
 
 ## Como rodar
@@ -135,6 +137,7 @@ Tudo é opcional: sem `.env`, a aplicação sobe com SQLite local, admin padrão
 | `PULSO_ALERTA_MAX_TENTATIVAS` | `4` | Tentativas totais por envio antes do dead-letter |
 | `PULSO_ALERTA_BACKOFF` | `60,300,900` | Atrasos (s) entre retentativas; o último se repete |
 | `PULSO_ALERTA_RETENTATIVA_INTERVALO` | `30` | Intervalo (s) do worker que varre a fila |
+| `PULSO_DEMO_SEED` | `0` | Semeia pedidos e fila fictícios em banco vazio (demo pública) |
 | `PULSO_SMTP_HOST`, `PULSO_SMTP_USUARIO`, `PULSO_SMTP_SENHA` | vazio | Canal de e-mail |
 | `PULSO_TELEGRAM_BOT_TOKEN` | vazio | Canal Telegram |
 | `PULSO_WHATSAPP_TOKEN`, `PULSO_WHATSAPP_PHONE_ID` | vazio | Canal WhatsApp Cloud API |
@@ -207,7 +210,7 @@ Reenvios com o mesmo `evento_id` respondem como duplicados e não alteram o pedi
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest -q      # 63 testes
+python -m pytest -q      # 64 testes
 ```
 
 Cobre autenticação, CSRF, 2FA, papéis, assinatura de webhook, idempotência, paginação, alertas, retentativa/dead-letter, retenção, migrações Alembic, métricas e rate limit, sempre em um SQLite temporário.
@@ -253,14 +256,14 @@ O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda em cada p
 
 ## Deploy de demonstração
 
-O mesmo Dockerfile serve API e painel, o que simplifica qualquer PaaS. Para a demo pública:
+O mesmo Dockerfile serve API e painel, o que simplifica qualquer PaaS. A demo pública roda em um único serviço, sem banco externo:
 
-1. **Render** — crie um Blueprint apontando para o repositório; o [`render.yaml`](render.yaml) provisiona o serviço web e um Postgres free. Preencha `PULSO_ADMIN_EMAIL` e `PULSO_ADMIN_SENHA` no dashboard (senha de demonstração, nunca uma conta real).
+1. **Render** — crie um Blueprint apontando para o repositório. O [`render.yaml`](render.yaml) sobe um serviço Docker com SQLite no próprio container e `PULSO_DEMO_SEED=1`. Preencha `PULSO_ADMIN_EMAIL` e `PULSO_ADMIN_SENHA` no dashboard com credenciais exclusivas de demonstração (nunca contas reais).
 2. **Deploy automático** — copie o *deploy hook* do serviço no Render e salve como secret `RENDER_DEPLOY_HOOK` no GitHub. O workflow [`deploy-render.yml`](.github/workflows/deploy-render.yml) dispara um deploy a cada push na `main`.
-3. **Dados de demonstração** — entre com o admin, abra **Simulador de webhook** e gere alguns pedidos; o painel já mostra histórico, alertas e a fila de entrega.
-4. **Alternativas** — Fly.io ou Railway funcionam com o mesmo `Dockerfile`, porta 8000, volume em `/dados` e as variáveis de `.env.example`.
+3. **Dados de demonstração** — no primeiro boot de um banco vazio, a demo recebe 12 pedidos, 3 integrações com segredo, notificações e uma fila de entrega com um envio pendente e um dead-letter. Entre com o admin e abra **Simulador de webhook** para criar pedidos novos em tempo real via SSE.
+4. **Alternativas** — Fly.io ou Railway funcionam com o mesmo `Dockerfile`, a porta de `$PORT` e um volume em `/dados` para persistir o SQLite.
 
-> O Postgres free do Render expira após 30 dias. Para uma demo de longo prazo, recrie o banco no blueprint ou use SQLite com disco persistente. GitHub Pages não serve: ele só entrega arquivos estáticos e não executa FastAPI.
+> O plano free do Render não inclui disco persistente: cada restart ou deploy recria o SQLite e semeia a demonstração de novo, o que mantém o link limpo e sem custo. O serviço hiberna após 15 minutos sem acesso, então o primeiro carregamento pode levar cerca de um minuto. GitHub Pages não serve: ele só entrega arquivos estáticos e não executa FastAPI.
 
 ### Publicando no GitHub
 
@@ -320,6 +323,7 @@ Confirme que `.env`, `*.db` e `.pulso-sessao` não aparecem em `git status` — 
 - A fila de retentativa usa um lock em processo. Com vários workers, rode um worker dedicado ou troque o lock por Redis/advisory lock para não duplicar envios.
 - Alertas WhatsApp dependem de template aprovado na Meta Cloud API.
 - O expurgo remove logs de webhook e registros de envio, mas não pedidos: o histórico operacional é preservado.
+- A demo no Render free usa SQLite em disco efêmero: reinícios limpam os dados e o primeiro acesso após hibernação pode levar cerca de um minuto.
 - Não há integração OAuth pronta com marketplaces; a loja cadastra o endpoint e o segredo em **Integrações**.
 
 ## Licença

@@ -6,6 +6,10 @@ Operations dashboard that receives signed marketplace webhooks, consolidates ord
 
 ![Pulso dashboard](docs/screenshots/02-dashboard.png)
 
+> **One-command local demo:** `PULSO_DEMO_SEED=1 PULSO_ALERTAS_EXTERNAS=0 docker compose up --build` → `http://localhost:8000` with `admin@pulso.local` / `pulso123`, 12 orders, integrations, notifications and a pre-filled delivery queue. Public demo steps are under [CI and deployment](#ci-and-deployment).
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/VictorStavarengo/pulso-webhooks)
+
 ## The problem
 
 Stores selling on multiple marketplaces (Shopify, Mercado Livre, Nuvemshop…) receive dozens of webhooks per day in different formats. Without a consolidation layer, the team finds out about delayed orders, cancellations and high-value sales too late — and every integration becomes an isolated script with no signature validation, idempotency or visibility.
@@ -66,7 +70,7 @@ Design decisions worth highlighting:
 | Frontend | React 19, TypeScript, Vite 8, Tailwind CSS 4 |
 | Security | scrypt, HMAC-SHA256, TOTP (pyotp), double-submit CSRF |
 | Observability | Prometheus (`prometheus-client`), Sentry, JSON logs |
-| Quality | pytest (63 tests), Playwright E2E, ESLint, GitHub Actions |
+| Quality | pytest (64 tests), Playwright E2E, ESLint, GitHub Actions |
 | Delivery | Multi-stage Docker, Docker Compose, Render Blueprint |
 
 ## Running locally
@@ -169,7 +173,7 @@ Replays with the same `evento_id` are reported as duplicates and never overwrite
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest -q      # 63 tests
+python -m pytest -q      # 64 tests
 ```
 
 Covers authentication, CSRF, 2FA, roles, webhook signatures, idempotency, pagination, alert retry/dead-letter, retention, Alembic migrations, metrics and rate limiting on a disposable SQLite database.
@@ -189,15 +193,15 @@ The E2E test is self-contained: it builds the panel, starts the API on `127.0.0.
 
 GitHub Actions runs three jobs on every push and pull request: pytest, frontend lint + production build, and the Playwright flow on Chrome.
 
-The same Docker image serves API and panel, which keeps deployment simple:
+The same Docker image serves API and panel, which keeps deployment simple. The public demo runs as a single service with no external database:
 
-1. Create a Render Blueprint from the repository. [`render.yaml`](render.yaml) provisions the web service and a free Postgres database. Set `PULSO_ADMIN_EMAIL`/`PULSO_ADMIN_SENHA` in the dashboard using demo-only credentials.
+1. Create a Render Blueprint from the repository. [`render.yaml`](render.yaml) provisions one Docker service with SQLite inside the container and `PULSO_DEMO_SEED=1`. Set `PULSO_ADMIN_EMAIL`/`PULSO_ADMIN_SENHA` in the dashboard using demo-only credentials.
 2. Copy the Render deploy hook into the `RENDER_DEPLOY_HOOK` GitHub secret. [`deploy-render.yml`](.github/workflows/deploy-render.yml) triggers a deploy on every push to `main`.
-3. After the first deploy, sign in, open **Webhook simulator** and generate demo orders.
+3. On the first boot of an empty database, the demo gets 12 orders, 3 integrations with secrets, notifications and a delivery queue holding one pending retry and one dead letter. Sign in and open **Webhook simulator** to create new orders live over SSE.
 
-Fly.io and Railway work with the same Dockerfile, port 8000 and a volume mounted at `/dados`. GitHub Pages is not an option: it only serves static files and cannot run FastAPI.
+Fly.io and Railway work with the same Dockerfile, the `$PORT` variable and a volume mounted at `/dados`. GitHub Pages is not an option: it only serves static files and cannot run FastAPI.
 
-> Render's free Postgres expires after 30 days. For a long-lived demo, recreate the database or use SQLite on a persistent disk.
+> Render's free plan has no persistent disk: every restart or deploy recreates the SQLite database and reseeds the demo, which keeps the link clean at zero cost. The service sleeps after 15 minutes of inactivity, so the first load can take about a minute.
 
 ## Security
 
@@ -230,6 +234,7 @@ Fly.io and Railway work with the same Dockerfile, port 8000 and a volume mounted
 - The retry loop uses an in-process lock. With multiple workers, run a dedicated worker or replace the lock with Redis/advisory locks to avoid duplicate sends.
 - WhatsApp alerts require a template approved by Meta Cloud API.
 - Retention purges webhook logs and delivery records, not orders.
+- The Render free demo runs SQLite on ephemeral disk: restarts wipe data and the first request after sleep can take about a minute.
 - No ready-made marketplace OAuth flow; each store registers its endpoint and secret under **Integrations**.
 
 ## License
